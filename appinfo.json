@@ -1,17 +1,34 @@
 {
-  "uuid": "eabae1df-6656-452e-861a-b7e2932138af",
-  "shortName": "SpyWatch",
-  "longName": "SpyWatch",
-  "companyName": "MakeAwesomeHappen",
-  "versionCode": 1,
-  "versionLabel": "1.0.0",
-  "watchapp": {
-    "watchface": false
-  },
-  "appKeys": {
-    "dummy": 0
-  },
-  "resources": {
-    "media": []
-  }
+    "uuid": "eabae1df-6656-452e-861a-b7e2932138af",
+    "shortName": "TF2InvisWatch",
+    "longName": "TF2 Invisibility Watch",
+    "companyName": "SlugSource",
+    "versionCode": 1,
+    "versionLabel": "1.0.0",
+    "watchapp":
+    {
+        "watchface": true
+    },
+    "appKeys": {},
+    "resources":
+    {
+        "media":
+        [
+            {
+                "type": "png",
+                "name": "IMAGE_BG",
+                "file": "images/bg.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_EMPTY",
+                "file": "images/empty.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_FULL",
+                "file": "images/full.png"
+            }
+        ]
+    }
 }
