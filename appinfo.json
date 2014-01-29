@@ -1,0 +1,17 @@
+{
+  "uuid": "eabae1df-6656-452e-861a-b7e2932138af",
+  "shortName": "SpyWatch",
+  "longName": "SpyWatch",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
