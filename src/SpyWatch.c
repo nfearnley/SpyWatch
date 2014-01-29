@@ -21,6 +21,7 @@ static BitmapLayer *status_layer[NUMBER_OF_STATUS_BARS];
 static int level = 0;
 static int diff = 1;
 
+// Advance the display by one tick
 static void tick()
 {
     level += diff;
@@ -28,24 +29,34 @@ static void tick()
     {
         diff = -diff;
     }
-    
 }
 
-static void update_gui()
+// Set an individual status bar
+static void set_bar(int i, bool status)
 {
-    // Set status bars
+    if (status)
+    {
+        bitmap_layer_set_bitmap(status_layer[i], full_image);
+    }
+    else
+    {
+        bitmap_layer_set_bitmap(status_layer[i], empty_image);
+    }
+}
+
+// Set status bars to a specified level
+static void set_bars(int level)
+{
     for (int i = 0; i < NUMBER_OF_STATUS_BARS; i++)
     {
-        if (i < level)
-        {
-            bitmap_layer_set_bitmap(status_layer[i], full_image);
-        }
-        else
-        {
-            bitmap_layer_set_bitmap(status_layer[i], empty_image);
-        }
-    }      
-    
+        set_bar(i, i < level);
+    }  
+}
+
+// Update GUI
+static void update_gui()
+{
+    set_bars(level);
 }
 
 // Called once per second
