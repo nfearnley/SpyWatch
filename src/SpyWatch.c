@@ -12,14 +12,23 @@
 #define SCREEN_WIDTH 144
 #define SCREEN_HEIGHT 168
 
+#define STATUS_RECHARGE 100
+#define STATUS_CLOAK 62
+#define STATUS_MAX STATUS_RECHARGE * STATUS_CLOAK
+
 static Window *window;
+
 static GBitmap *bg_image;
 static GBitmap *empty_image;
 static GBitmap *full_image;
+
 static BitmapLayer *bg_layer;
 static BitmapLayer *status_layer[NUMBER_OF_STATUS_BARS];
+
+static AppTimer *timer;
+
 static AccelData old_accel;
-static int level = 10;
+static int level = STATUS_MAX;
 
 static int16_t abs_int16t(int16_t input)
 {
@@ -32,28 +41,43 @@ static int16_t deadzone_int16t(int16_t input, int16_t deadzone)
     return output < 0 ? 0 : output;
 }
 
+static int clamp(int input, int min, int max)
+{
+    int output = input;
+    if (input < min)
+    {
+        output = min;
+    }
+    else if (input > max)
+    {
+        output = max;
+    }
+    return output;
+}
+
 // Advance the display by one tick
 static void tick()
 {
     AccelData accel;
     accel_service_peek(&accel);
-    int16_t d = 0;
-    d += abs_int16t(accel.x - old_accel.x);
-    d += abs_int16t(accel.y - old_accel.y);
-    d += abs_int16t(accel.z - old_accel.z);
-    d = deadzone_int16t(d, 400);
+    int16_t movement = 0;
+    movement += abs_int16t(accel.x - old_accel.x);
+    movement += abs_int16t(accel.y - old_accel.y);
+    movement += abs_int16t(accel.z - old_accel.z);
+    movement = deadzone_int16t(movement, 150);
     old_accel = accel;
     
-    if (d > 0 && level > 0)
+    if (movement > 0)
     {
-        level--;
+        level = level - STATUS_RECHARGE;
     }
-    else if (d <= 0 && level < 10)
+    else
     {
-        level++;
+        level = level + STATUS_CLOAK;
     }
+    level = clamp(level, 0, STATUS_MAX);
     
-    app_log(APP_LOG_LEVEL_DEBUG, __FILE__, __LINE__, "Accel: %d [%d]", d, level);
+    app_log(APP_LOG_LEVEL_DEBUG, __FILE__, __LINE__, "Accel: %d, Level: %d, Status: %d", movement, level, level / (STATUS_MAX / 10));
 }
 
 // Set an individual status bar
@@ -81,7 +105,7 @@ static void set_bars(int level)
 // Update GUI
 static void update_gui()
 {
-    set_bars(level);
+    set_bars(level / (STATUS_MAX / 10));
 }
 
 // Called once per second
@@ -94,6 +118,14 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed)
 static void handle_accel(AccelData *accel_data, uint32_t num_samples)
 {
   // do nothing
+}
+
+
+static void handle_timer(void *data)
+{
+    tick();
+    update_gui();
+    timer = app_timer_register(100 /* milliseconds */, handle_timer, NULL);
 }
 
 // Handle the start-up of the app
@@ -122,18 +154,23 @@ static void init(void)
     }
     
     // Subscribe minute handler
-    tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
+    //tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
     
     // Setup accelerator handling
     old_accel = (AccelData) { .x = 0, .y = 0, .z = 0 };
     accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
     accel_service_set_samples_per_update(0);
     accel_data_service_subscribe(0, handle_accel);
+    
+    timer = app_timer_register(100 /* milliseconds */, handle_timer, NULL);
 }
 
 // Handle the shutdown of the app
 static void deinit(void)
 {
+    // Disable accelerator handling
+    accel_data_service_unsubscribe();
+    
     // Destroy status layers
     for (int i = 0; i < NUMBER_OF_STATUS_BARS; i++)
     {
