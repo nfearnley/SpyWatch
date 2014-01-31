@@ -18,17 +18,42 @@ static GBitmap *empty_image;
 static GBitmap *full_image;
 static BitmapLayer *bg_layer;
 static BitmapLayer *status_layer[NUMBER_OF_STATUS_BARS];
-static int level = 0;
-static int diff = 1;
+static AccelData old_accel;
+static int level = 10;
+
+static int16_t abs_int16t(int16_t input)
+{
+    return input < 0 ? -input : input;
+}
+
+static int16_t deadzone_int16t(int16_t input, int16_t deadzone)
+{
+    int16_t output = input - deadzone;
+    return output < 0 ? 0 : output;
+}
 
 // Advance the display by one tick
 static void tick()
 {
-    level += diff;
-    if (level == 0 || level == 10)
+    AccelData accel;
+    accel_service_peek(&accel);
+    int16_t d = 0;
+    d += abs_int16t(accel.x - old_accel.x);
+    d += abs_int16t(accel.y - old_accel.y);
+    d += abs_int16t(accel.z - old_accel.z);
+    d = deadzone_int16t(d, 400);
+    old_accel = accel;
+    
+    if (d > 0 && level > 0)
     {
-        diff = -diff;
+        level--;
     }
+    else if (d <= 0 && level < 10)
+    {
+        level++;
+    }
+    
+    app_log(APP_LOG_LEVEL_DEBUG, __FILE__, __LINE__, "Accel: %d [%d]", d, level);
 }
 
 // Set an individual status bar
@@ -66,6 +91,11 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed)
     update_gui();
 }
 
+static void handle_accel(AccelData *accel_data, uint32_t num_samples)
+{
+  // do nothing
+}
+
 // Handle the start-up of the app
 static void init(void)
 {
@@ -93,6 +123,12 @@ static void init(void)
     
     // Subscribe minute handler
     tick_timer_service_subscribe(SECOND_UNIT, &handle_tick);
+    
+    // Setup accelerator handling
+    old_accel = (AccelData) { .x = 0, .y = 0, .z = 0 };
+    accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
+    accel_service_set_samples_per_update(0);
+    accel_data_service_subscribe(0, handle_accel);
 }
 
 // Handle the shutdown of the app
