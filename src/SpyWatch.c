@@ -120,7 +120,6 @@ static void handle_accel(AccelData *accel_data, uint32_t num_samples)
   // do nothing
 }
 
-
 static void handle_timer(void *data)
 {
     tick();
